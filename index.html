@@ -1,0 +1,354 @@
+<html>
+<head>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="source.js"></script>
+    <script src="hashset.js"></script>
+    <script src="hashtable.js"></script>
+</head>
+<body>
+
+    
+    <button onclick="start()">Start</button>
+<div class="container">
+    <div id="cell-0" pos="0" class="cell white"></div>
+    <div id="cell-1" pos="0" class="cell">1</div>
+    <div id="cell-2" pos="0" class="cell">2</div>
+    <div id="cell-3" pos="0" class="cell">3</div>
+    <div id="cell-4" pos="0" class="cell">4</div>
+    <div id="cell-5" pos="0" class="cell">5</div>
+    <div id="cell-6" pos="0" class="cell">6</div>
+    <div id="cell-7" pos="0" class="cell">7</div>
+    <div id="cell-8" pos="0" class="cell">8</div>
+</div>
+
+<script>
+
+    var c0 = document.getElementById("cell-0");
+    var c1 = document.getElementById("cell-1");
+    var c2 = document.getElementById("cell-2");
+    var c3 = document.getElementById("cell-3");
+    var c4 = document.getElementById("cell-4");
+    var c5 = document.getElementById("cell-5");
+    var c6 = document.getElementById("cell-6");
+    var c7 = document.getElementById("cell-7");
+    var c8 = document.getElementById("cell-8");
+
+    var puzzle = {
+        init(initialMatrix) {
+            var arr = [c0, c1, c2, c3, c4, c5, c6, c7, c8];
+            for (var row=0; row < initialMatrix.length; row++) {
+                for (var col=0; col < initialMatrix[row].length; col++) {
+                    this.moveTo(arr[initialMatrix[row][col]], (row * 3) + col);
+                }
+            }
+        },
+        moveLeft: (element, t=1) => {
+            for (var i=0; i<t; i++) {
+
+                element.attributes.pos.nodeValue = (+element.attributes.pos.nodeValue) - 1;
+                element.style.marginLeft =
+                    (+element.style.marginLeft.substr(0, element.style.marginLeft.length - 2)) - 53;
+            }
+        },
+        moveTop: (element, t=1) => {
+            for (var i=0; i<t; i++) {
+
+                element.attributes.pos.nodeValue = (+element.attributes.pos.nodeValue) - 3;
+                element.style.marginTop =
+                    (+element.style.marginTop.substr(0, element.style.marginTop.length - 2)) - 53;
+            }
+        },
+        moveRight: (element, t=1) => {
+            for (var i=0; i<t; i++) {
+ 
+                element.attributes.pos.nodeValue = (+element.attributes.pos.nodeValue) + 1;
+                element.style.marginLeft =
+                    (+element.style.marginLeft.substr(0, element.style.marginLeft.length - 2)) + 53;
+            }
+        },
+        moveBottom: (element, t=1) => {
+            for (var i=0; i<t; i++) {
+ 
+                element.attributes.pos.nodeValue = (+element.attributes.pos.nodeValue) + 3;
+                element.style.marginTop =
+                    (+element.style.marginTop.substr(0, element.style.marginTop.length - 2)) + 53;
+            }
+        },
+        switch(c1, c2) {
+            var tmpT = c1.style.marginTop;
+            var tmpL = c1.style.marginLeft;
+            var tmpP = c1.attributes.pos.nodeValue;
+
+            c1.style.marginTop = c2.style.marginTop;
+            c1.style.marginLeft = c2.style.marginLeft;
+            c1.attributes.pos.nodeValue = c2.attributes.pos.nodeValue;
+
+            c2.style.marginTop = tmpT;
+            c2.style.marginLeft = tmpL;
+            c2.attributes.pos.nodeValue = tmpP;
+
+        },
+        moveTo(c, position) {
+            switch(position) {
+                case 0:
+                    return;
+                case 1: {
+                    this.moveRight(c);
+                    break;
+                }
+                case 2: {
+                    this.moveRight(c, 2);
+                    break;
+                }
+                case 3: {
+                    this.moveBottom(c);
+                    break;
+                }
+                case 4: {
+                    this.moveRight(c);
+                    this.moveBottom(c);
+                    break;
+                }
+                case 5: {
+                    this.moveRight(c, 2);
+                    this.moveBottom(c);
+                    break;
+                }
+                case 6: {
+                    this.moveBottom(c, 2)
+                    break
+                }
+                case 7: {
+                    this.moveBottom(c, 2)
+                    this.moveRight(c)
+                    break
+                }
+                case 8: {
+                    this.moveRight(c, 2)
+                    this.moveBottom(c, 2)
+                    break;
+                }
+            }
+        }
+    }
+
+    class Cell {
+        constructor(value, state, emptyRow, emptyCol, depth) {
+            this.value = value
+            this.state = state
+            this.emptyCol = emptyCol
+            this.emptyRow = emptyRow
+            this.depth = depth
+            this.strRepresentation = ""
+            this.path = "";
+            for (var i = 0; i < state.length; i++)
+            {
+                // We assume the state is a square
+                if (state[i].length != state.length) {
+                    alert('Number of rows differs from number of columns')
+                    return false
+                }
+
+                for (var j = 0; j < state[i].length; j++)
+                    this.strRepresentation += state[i][j] + ",";
+            }
+            this.size = this.state.length
+        }
+    }
+
+    class AStar {
+        constructor(initial, goal, empty) {
+            this.initial = initial
+            this.goal = goal
+            this.empty = empty
+            this.queue = new PriorityQueue([], function(a, b) { 
+                if (a.value > b.value)
+                    return 1
+                if (a.value < b.value)
+                    return -1
+                return 0
+            });
+            this.queue.queue(initial);
+            this.visited = new HashSet();
+        }
+
+        execute() {
+
+            this.visited.add(this.initial.strRepresentation)
+
+            while (this.queue.length > 0) 
+            {
+                var current = this.queue.dequeue()
+
+                if (current.strRepresentation == this.goal.strRepresentation) 
+                    return current
+
+                this.expandNode(current)
+            }
+        }
+
+        expandNode(node) {
+            var temp;
+            var newState;
+            var col = node.emptyCol
+            var row = node.emptyRow
+            var newNode;
+
+            // Up
+            if (row > 0)
+            {
+                newState = node.state.clone();
+                temp = newState[row - 1][col]
+                newState[row - 1][col] = this.empty
+                newState[row][col] = temp
+                newNode = new Cell(0, newState, row - 1, col,  node.depth + 1)
+
+                if (!this.visited.contains(newNode.strRepresentation))
+                {
+                    newNode.value = newNode.depth + this.heuristic(newNode)
+                    newNode.path = node.path + "U"
+                    this.queue.queue(newNode)
+                    this.visited.add(newNode.strRepresentation)
+                }
+            }
+
+            // Down
+            if (row < node.size - 1)
+            {
+                newState = node.state.clone();
+                temp = newState[row + 1][col]
+                newState[row + 1][col] = this.empty
+                newState[row][col] = temp
+                newNode = new Cell(0, newState, row + 1, col, node.depth + 1)
+
+                if (!this.visited.contains(newNode.strRepresentation))
+                {
+                    newNode.value = newNode.depth + this.heuristic(newNode)
+                newNode.path = node.path + "D"
+                    this.queue.queue(newNode)
+                    this.visited.add(newNode.strRepresentation)
+                }
+            }
+
+            // Left
+            if (col > 0)
+            {
+                newState = node.state.clone();
+                temp = newState[row][col - 1]
+                newState[row][col - 1] = this.empty
+                newState[row][col] = temp
+                newNode = new Cell(0, newState, row, col - 1, node.depth + 1)
+
+                if (!this.visited.contains(newNode.strRepresentation))
+                {
+                    newNode.value = newNode.depth + this.heuristic(newNode)
+                newNode.path = node.path + "L"
+                    this.queue.queue(newNode)
+                    this.visited.add(newNode.strRepresentation)
+                }
+            }
+
+            // Right
+            if (col < node.size - 1)
+            {
+                newState = node.state.clone();
+                temp = newState[row][col + 1]
+                newState[row][col + 1] = this.empty
+                newState[row][col] = temp
+                newNode = new Cell(0, newState, row, col + 1, node.depth + 1)
+
+                if (!this.visited.contains(newNode.strRepresentation))
+                {
+                    newNode.value = newNode.depth + this.heuristic(newNode)
+                    newNode.path = node.path + "R"
+                    this.queue.queue(newNode)
+                    this.visited.add(newNode.strRepresentation)
+                }
+            }
+        }
+        heuristic(node) {
+            return this.misplacedTiles(node);
+        }
+        manhattanDistance(node) {
+
+        }
+        misplacedTiles(node) {
+            var result = 0;
+
+            for (var i = 0; i < node.state.length; i++)
+            {
+                for (var j = 0; j < node.state[i].length; j++)
+                if (node.state[i][j] != this.goal.state[i][j] && node.state[i][j] != this.empty)
+                result++;
+            }
+
+            return result;
+        }
+    }
+
+    var iArr = [[1,4,0],[3,5,8],[7,6,2]];
+
+    puzzle.init(iArr);
+    function start() {
+
+
+        var init = new Cell(0, iArr, 0, 2, 0);
+        var goal = new Cell(0, [[1,2,3],[4,5,6],[7,8,0]], 2, 2, 0);
+
+        var astar = new AStar(init, goal, 0)
+        // To measure time taken by the algorithm
+        var startTime = new Date()
+        // Execute AStar
+        var result = astar.execute()
+        // To measure time taken by the algorithm
+        var endTime = new Date()
+        console.log('Completed in: ' + (endTime - startTime) + ' milliseconds')
+
+        console.log(result)
+
+        var pathLength = result.path.length;
+        var i=0;
+        setInterval(() => {
+
+            if (i < pathLength) {
+                
+                var char = result.path.substr(i, 1);
+                switch (char) {
+                    case 'L': {
+                        var pos = +c0.attributes.pos.nodeValue;
+                        var switchElement = document.querySelector(`[pos="${pos - 1}"]`)
+                        puzzle.switch(c0, switchElement);
+                        break;
+                    }
+                    case 'R': {
+                        var pos = +c0.attributes.pos.nodeValue;
+                        var switchElement = document.querySelector(`[pos="${pos + 1}"]`)
+                        puzzle.switch(c0, switchElement);
+                        break;
+                    }
+                    case 'U': {
+                        var pos = +c0.attributes.pos.nodeValue;
+                        var switchElement = document.querySelector(`[pos="${pos - 3}"]`)
+                        puzzle.switch(c0, switchElement);
+                        break;
+                    }
+                    case 'D': {
+                        var pos = +c0.attributes.pos.nodeValue;
+                        var switchElement = document.querySelector(`[pos="${pos + 3}"]`)
+                        puzzle.switch(c0, switchElement);
+                        break;
+                    }
+                }
+
+                ++i;
+            }
+
+        }, 700);
+    }
+    Array.prototype.clone = function() {
+        return JSON.parse(JSON.stringify(this))
+    }
+
+</script>
+</body>
+</html>
