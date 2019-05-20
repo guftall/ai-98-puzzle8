@@ -143,7 +143,6 @@
             this.path = "";
             for (var i = 0; i < state.length; i++)
             {
-                // We assume the state is a square
                 if (state[i].length != state.length) {
                     alert('Number of rows differs from number of columns')
                     return false
@@ -198,9 +197,13 @@
             if (row > 0)
             {
                 newState = node.state.clone();
+
+                // switch empty cell by cell in row-1
                 temp = newState[row - 1][col]
                 newState[row - 1][col] = this.empty
                 newState[row][col] = temp
+
+                // this is one of (for example 4) nodes that root node may contain
                 newNode = new Cell(0, newState, row - 1, col,  node.depth + 1)
 
                 if (!this.visited.contains(newNode.strRepresentation))
@@ -277,11 +280,16 @@
 
             for (var i = 0; i < node.state.length; i++)
             {
-                for (var j = 0; j < node.state[i].length; j++)
-                if (node.state[i][j] != this.goal.state[i][j] && node.state[i][j] != this.empty)
-                result++;
+                for (var j = 0; j < node.state[i].length; j++) {
+                    // we check this.empty to prevent over estimating empty cell,
+                    // means for example when we have all cells in their place except
+                    // cell 6 and empty cell, we only need one move (move 6 cell up) to get goal state,
+                    // not two move (move empty cell down + move 6 cell up)
+                    if (node.state[i][j] != this.goal.state[i][j] && node.state[i][j] != this.empty) {
+                        result++;
+                    }                
+                }
             }
-
             return result;
         }
     }
